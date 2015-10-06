@@ -1,0 +1,113 @@
+apply plugin: 'com.android.application'
+
+def getBuildDate() {
+    def date = new Date()
+    def formattedDate = date.format("yyyyMMdd'T'HHmmss'Z'")
+    return formattedDate
+}
+def BUILD_DATE = getBuildDate()
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
+
+    def Properties versionProps = new Properties()
+    versionProps.load(new FileInputStream(file('version.properties')))
+
+    defaultConfig {
+        applicationId "me.longman.apps.helloworld"
+        testApplicationId applicationId.toString() + ".test"
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode versionProps['code'].toInteger()
+        versionName versionProps['name']
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("config/debug.keystore")
+        }
+        release {
+            storeFile file("config/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
+    if (project.rootProject.file('local.properties').exists()) {
+        def propFile = new File('local.properties')
+        if (propFile.canRead()) {
+            def Properties props = new Properties()
+            props.load(new FileInputStream(propFile))
+
+            if (props.getProperty('MyProject.keystore')) {
+                //println("DBG: File local.properties hasProperty MyProject.keystore")
+                signingConfigs {
+                    debug {
+                        storeFile signingConfigs.debug.storeFile
+                    }
+                    release {
+                        storeFile file(props.getProperty('MyProject.keystore'))
+                        storePassword props.getProperty('MyProject.keystore.password')
+                        keyAlias props.getProperty('MyProject.keyAlias')
+                        keyPassword props.getProperty('MyProject.keyPassword')
+                    }
+                }
+            } else {
+                println("MyProject.keystore property not found in file local.properties")
+            }
+        }
+    }
+
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug" + "-build" + BUILD_DATE
+            signingConfig signingConfigs.debug
+            debuggable true
+            zipAlignEnabled false
+            minifyEnabled false
+            //buildConfigField "String", "BUILD_TIME", "BUILD_DATE"
+        }
+        release {
+            signingConfig signingConfigs.release
+            debuggable false
+            zipAlignEnabled true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            //buildConfigField "String", "BUILD_TIME", "BUILD_DATE"
+        }
+    }
+}
+
+
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+
+    // Play Services
+    compile 'com.google.android.gms:play-services-base:8.1.0'
+    compile 'com.google.android.gms:play-services-gcm:8.1.0'
+
+
+    compile 'com.android.support:appcompat-v7:23.0.1'
+    compile 'com.android.support:design:23.0.1'
+
+    // butter knife
+    compile 'com.jakewharton:butterknife:7.0.1'
+
+}
